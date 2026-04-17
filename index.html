@@ -6,15 +6,30 @@
     <title>巡检记录单</title>
     <link rel="manifest" href="manifest.json" />
     <script>
+      // Automatically unregister any stale service workers to prevent blank screens
+      // caused by cached index.html pointing to old JS chunks.
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').then(registration => {
-            console.log('SW registered: ', registration);
-          }).catch(registrationError => {
-            console.log('SW registration failed: ', registrationError);
-          });
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            registration.unregister();
+            console.log('Unregistered stale SW');
+          }
         });
+        
+        // Also clear caches
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            for (let name of names) caches.delete(name);
+          });
+        }
       }
+      
+      window.addEventListener('error', function(e) {
+        document.body.innerHTML += '<div style="color:red;padding:20px;">Global Error: ' + e.message + '<br>' + e.filename + ':' + e.lineno + '</div>';
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        document.body.innerHTML += '<div style="color:red;padding:20px;">Unhandled Promise: ' + e.reason + '</div>';
+      });
     </script>
   </head>
   <body>
