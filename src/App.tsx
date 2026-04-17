@@ -151,9 +151,9 @@ export default function App() {
 
               <div className="form-group">
                 <label htmlFor="wifi_password">热点密码</label>
-                <div className="relative">
+                <div className="relative flex items-center">
                   <input type={showPassword ? 'text' : 'password'} id="wifi_password" className="form-input pr-12" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3 text-[#86868B] transition-colors hover:text-[#007AFF]">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-[#86868B] transition-colors hover:text-[#007AFF] flex items-center justify-center">
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
