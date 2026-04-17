@@ -106,36 +106,42 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen max-w-[1200px] mx-auto p-4 sm:p-6 w-full">
-      <header className="flex justify-between items-center mb-6 px-2">
+    <div className="flex flex-col min-h-screen max-w-[1200px] mx-auto p-5 sm:p-8 w-full">
+      <header className="flex justify-between items-start mb-10 px-1">
         <div>
-            <h1 className="text-[22px] font-bold text-[#1D1D1F]">巡检记录单</h1>
-            <p className="text-[13px] text-[#86868B] mt-1">巡检录入中枢 · 硬件配网 · 实时监视</p>
+            <h1 className="text-[28px] font-bold tracking-tight text-[#1D1D1F]">巡检记录单</h1>
+            <p className="text-[14px] text-[#86868B] mt-1 font-medium">巡检录入中枢 · 硬件配网 · 实时监视</p>
         </div>
-        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-semibold ${isOnline ? 'bg-[#34C759]/15 text-[#34C759]' : 'bg-[#FF3B30]/15 text-[#FF3B30]'}`}>
-           <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-[#34C759]' : 'bg-[#FF3B30]'}`}></div>
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-[13px] font-bold shadow-sm ${isOnline ? 'bg-white text-[#34C759] border border-[#34C759]/20' : 'bg-white text-[#FF3B30] border border-[#FF3B30]/20'}`}
+        >
+           <div className={`w-2 h-2 rounded-full animate-pulse ${isOnline ? 'bg-[#34C759]' : 'bg-[#FF3B30]'}`}></div>
            {isOnline ? '系统在线' : '离线模式'}
-        </div>
+        </motion.div>
       </header>
 
-      <main className="flex flex-col gap-6 max-w-xl w-full mx-auto pb-16">
+      <main className="flex flex-col gap-8 max-w-xl w-full mx-auto pb-20">
         
         {/* Module 1: Business Context & Results */}
-        <section className="glass-card flex flex-col pt-6 pb-6 shadow-2xl">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-[18px] font-bold text-[#1D1D1F] m-0">巡检信息上报</h2>
-            <div className="flex items-center gap-1 text-[12px] font-medium text-[#007AFF] bg-[#007AFF]/10 px-2 py-1 rounded-lg">
-              <Database size={14}/>
+        <section className="glass-card shadow-xl ring-1 ring-black/5 flex flex-col pt-8 pb-8">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-[20px] font-bold text-[#1D1D1F] m-0 tracking-tight">巡检信息上报</h2>
+            <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#007AFF] bg-[#007AFF]/8 px-3 py-1.5 rounded-full">
+              <Database size={13}/>
               离线待报: {(getOfflineTasks() as any).length || 0}
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col flex-1">
-            {/* WiFi Setup (Foldable or Integrated) */}
-            <div className="mb-6 p-5 bg-black/5 rounded-[20px] border border-black/5">
-              <div className="flex items-center gap-2 mb-4">
-                <Wifi size={18} className="text-[#007AFF]"/>
-                <h3 className="font-bold text-[15px]">中继器配网参数</h3>
+          <form onSubmit={handleSubmit} className="flex flex-col flex-1 gap-1">
+            {/* WiFi Setup (Integrated) */}
+            <div className="mb-8 p-6 bg-[#F5F5F7]/80 rounded-[28px] border border-black/[0.03]">
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="w-8 h-8 rounded-full bg-[#007AFF] flex items-center justify-center text-white shadow-lg shadow-[#007AFF]/20">
+                  <Wifi size={16}/>
+                </div>
+                <h3 className="font-bold text-[16px] text-[#1D1D1F]">中继器配网参数</h3>
               </div>
               
               <div className="form-group">
@@ -146,9 +152,9 @@ export default function App() {
               <div className="form-group">
                 <label htmlFor="wifi_password">热点密码</label>
                 <div className="relative">
-                  <input type={showPassword ? 'text' : 'password'} id="wifi_password" className="form-input pr-10" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-[#86868B]">
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  <input type={showPassword ? 'text' : 'password'} id="wifi_password" className="form-input pr-12" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3 text-[#86868B] transition-colors hover:text-[#007AFF]">
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
               </div>
@@ -159,9 +165,9 @@ export default function App() {
                   if(!ssid) { alert('请先输入手机热点名称'); return; }
                   setShowFullScreenQR(true);
                 }}
-                className="w-full py-3 bg-white border border-[#007AFF] text-[#007AFF] rounded-xl text-sm font-bold shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                className="w-full py-4 bg-white border border-[#E5E5E5] text-[#007AFF] rounded-2xl text-[15px] font-bold shadow-sm active:scale-[0.98] hover:shadow-md transition-all flex items-center justify-center gap-2.5"
               >
-                <QrCode size={18}/>
+                <QrCode size={20}/>
                 生成中继器配网二维码
               </button>
             </div>
@@ -259,35 +265,62 @@ export default function App() {
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6"
+            className="fixed inset-0 z-50 bg-[#000]/95 backdrop-blur-xl flex flex-col items-center justify-center p-6"
           >
-            <button 
+            <motion.button 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2 }}
               onClick={() => setShowFullScreenQR(false)}
-              className="absolute top-6 right-6 text-white/50 hover:text-white"
+              className="absolute top-8 right-8 text-white/40 hover:text-white transition-colors"
             >
-              <X size={32}/>
-            </button>
-            <div className="text-center mb-8">
-              <h2 className="text-white text-xl font-bold mb-2">中继器配网二维码</h2>
-              <p className="text-white/60 text-sm">请将中继器摄像头对准屏幕</p>
-            </div>
-            <div className="bg-white p-6 rounded-[32px] shadow-[0_0_50px_rgba(0,122,255,0.4)]">
-              <QRCodeSVG value={generateQRCodeStr()} size={240} level="H" />
-            </div>
+              <X size={40} strokeWidth={1.5}/>
+            </motion.button>
+
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="text-center mb-12"
+            >
+              <div className="w-16 h-16 bg-[#007AFF] rounded-3xl flex items-center justify-center text-white mx-auto mb-6 shadow-2xl shadow-[#007AFF]/40">
+                <QrCode size={32}/>
+              </div>
+              <h2 className="text-white text-2xl font-bold mb-3 tracking-tight">中继器配网二维码</h2>
+              <p className="text-white/50 text-[15px] font-medium">请将中继器摄像头对准屏幕中心区域</p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", damping: 20, stiffness: 100, delay: 0.2 }}
+              className="bg-white p-8 rounded-[48px] shadow-[0_0_80px_rgba(0,122,255,0.3)] relative"
+            >
+              <QRCodeSVG value={generateQRCodeStr()} size={280} level="H" />
+              <div className="absolute -inset-4 border border-white/10 rounded-[60px] pointer-events-none"></div>
+            </motion.div>
             
-            <div className="mt-12 flex flex-col gap-4 w-full max-w-xs">
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="mt-16 flex flex-col gap-6 w-full max-w-sm px-6"
+            >
               <button 
                 onClick={() => {
                   alert('中继器建立连接成功！');
                   setShowFullScreenQR(false);
                 }}
-                className="w-full py-4 bg-[#34C759] text-white rounded-2xl font-bold flex items-center justify-center gap-2"
+                className="w-full py-5 bg-[#34C759] text-white rounded-[24px] font-bold text-lg shadow-xl shadow-[#34C759]/20 flex items-center justify-center gap-3 active:scale-[0.98] transition-transform"
               >
-                <CheckCircle2 size={20}/>
-                模拟扫描成功并连接
+                <CheckCircle2 size={24}/>
+                确认连接成功
               </button>
-              <p className="text-white/40 text-[11px] text-center">中继器连接云端后会自动同步配网状态</p>
-            </div>
+              <div className="flex flex-col gap-1">
+                <p className="text-white/30 text-[12px] text-center font-medium">中继器连接云端后会自动同步配网状态</p>
+                <p className="text-white/20 text-[10px] text-center">加密协议: {encryption}</p>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
