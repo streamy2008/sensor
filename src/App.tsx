@@ -47,16 +47,23 @@ export default function App() {
     }
 
     setIsSubmitting(true);
-    const data = { hospitalName, inspectorName, totalRooms, validRooms, currentRoom, deviceSn };
+    const payload = {
+        sn: deviceSn, // 确保这个中继器 SN 码非空
+        hospital_name: hospitalName,
+        inspector_name: inspectorName,
+        total_rooms: parseInt(totalRooms),
+        valid_rooms: parseInt(validRooms),
+        current_room: currentRoom
+    };
 
     try {
       if (isOnline) {
-        console.log('Posting data online...', data);
-        // await fetch('/.netlify/functions/submitContext', { method: 'POST', body: JSON.stringify(data) });
+        console.log('Posting data online...', payload);
+        // await fetch('/.netlify/functions/submitContext', { method: 'POST', body: JSON.stringify(payload) });
         await new Promise(r => setTimeout(r, 600)); // simulate network
         alert('上报成功！');
       } else {
-        await saveOfflineTask(data);
+        await saveOfflineTask(payload);
         alert('当前处于离线状态，数据已保存至本地，网络恢复后将自动上报。');
       }
     } catch (err) {
