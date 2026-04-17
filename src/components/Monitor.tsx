@@ -28,27 +28,32 @@ export function Monitor({ deviceSn, setDeviceSn }: { deviceSn: string; setDevice
 
   const pullData = async () => {
     let currentSn = deviceSn;
-    // 自动填写SN码
+    
+    // 如果上方的表单内尚未获取中继器SN码，则模拟从硬件拉取并自动填写
     if (!currentSn) {
-      currentSn = `SN123456`; // 默认给定一个测试SN码
-      setDeviceSn(currentSn);
+      // 模拟硬件设备实际返回的真实内建SN
+      currentSn = `SN-${Math.floor(100000 + Math.random() * 900000)}`; 
+      setDeviceSn(currentSn); // 将硬件获取到的SN自动填写并同步回上报表单模块
     }
+    
     setError('');
     
     try {
-      // 模拟上传设备log信息
-      console.log(`[Log Upload] Posting device logs online for SN: ${currentSn}...`, {
+      // 模拟上传设备log信息，并将 SN 码作为外键进行合并
+      console.log(`[Device Log] Posting hardware telemetry to DB...`, {
+        deviceSn: currentSn, // 带上SN码以便数据库将其与业务巡检记录合并
         timestamp: new Date().toISOString(),
         event: 'telemetry_sync',
         battery: '88%',
-        signalStrength: '-50dBm'
+        signalStrength: '-50dBm',
+        log: 'Hardware functioning nominally.'
       });
       
       const mockData = {
         lastSync: new Date().toLocaleTimeString(),
         validCurrentRoom: Math.floor(Math.random() * 5) + 40,
         valid30Days: Math.floor(Math.random() * 50) + 100,
-        aiInsights: '设备 Log 已后台静默上传。当前 OR-3 中传感器密度良好，建议 48 小时内补充耗材。'
+        aiInsights: `设备 Log 已后台静默上传。监控系统已绑定当前设备 SN: ${currentSn}。传感器数据正常。`
       };
       setStats(mockData);
     } catch (err) {
