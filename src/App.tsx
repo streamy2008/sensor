@@ -1,7 +1,8 @@
-import { Scan, Save, Settings, Database, Server, Wifi } from 'lucide-react';
+import { Scan, Save, Settings, Database, Server, Wifi, Eye, EyeOff, X, CheckCircle2, QrCode } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { NetworkConfig } from './components/NetworkConfig';
+import { QRCodeSVG } from 'qrcode.react';
+import { motion, AnimatePresence } from 'motion/react';
 import { saveOfflineTask, getOfflineTasks, clearOfflineTasks } from './components/db';
 
 interface FinalStats {
@@ -18,6 +19,13 @@ export default function App() {
   const [currentRoom, setCurrentRoom] = useState('OR-1');
   const [deviceSn, setDeviceSn] = useState('');
   
+  // WiFi Config States
+  const [ssid, setSsid] = useState('');
+  const [password, setPassword] = useState('');
+  const [encryption, setEncryption] = useState('WPA2-PSK (AES)');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showFullScreenQR, setShowFullScreenQR] = useState(false);
+
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stats, setStats] = useState<FinalStats | null>(null);
@@ -93,6 +101,10 @@ export default function App() {
     }
   };
 
+  const generateQRCodeStr = () => {
+    return `WIFI:T:${encryption.split('-')[0]};S:${ssid};P:${password};H:false;;`;
+  };
+
   return (
     <div className="flex flex-col min-h-screen max-w-[1200px] mx-auto p-4 sm:p-6 w-full">
       <header className="flex justify-between items-center mb-6 px-2">
@@ -108,13 +120,52 @@ export default function App() {
 
       <main className="flex flex-col gap-6 max-w-xl w-full mx-auto pb-16">
         
-        {/* Module 2: Setup QR (Now On Top) */}
-        <NetworkConfig />
+        {/* Module 1: Business Context & Results */}
+        <section className="glass-card flex flex-col pt-6 pb-6 shadow-2xl">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-[18px] font-bold text-[#1D1D1F] m-0">巡检信息上报</h2>
+            <div className="flex items-center gap-1 text-[12px] font-medium text-[#007AFF] bg-[#007AFF]/10 px-2 py-1 rounded-lg">
+              <Database size={14}/>
+              离线待报: {(getOfflineTasks() as any).length || 0}
+            </div>
+          </div>
 
-        {/* Module 1: Business Context & Results (Now At Bottom) */}
-        <section className="glass-card flex flex-col pt-6 pb-6">
-          <h2 className="mb-4 text-[18px] font-bold text-[#1D1D1F]">巡检信息上报</h2>
           <form onSubmit={handleSubmit} className="flex flex-col flex-1">
+            {/* WiFi Setup (Foldable or Integrated) */}
+            <div className="mb-6 p-5 bg-black/5 rounded-[20px] border border-black/5">
+              <div className="flex items-center gap-2 mb-4">
+                <Wifi size={18} className="text-[#007AFF]"/>
+                <h3 className="font-bold text-[15px]">中继器配网参数</h3>
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="wifi_ssid">手机热点（ SSID）</label>
+                <input type="text" id="wifi_ssid" className="form-input" placeholder="输入手机热点名称" value={ssid} onChange={(e) => setSsid(e.target.value)} />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="wifi_password">热点密码</label>
+                <div className="relative">
+                  <input type={showPassword ? 'text' : 'password'} id="wifi_password" className="form-input pr-10" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-[#86868B]">
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <button 
+                type="button" 
+                onClick={() => {
+                  if(!ssid) { alert('请先输入手机热点名称'); return; }
+                  setShowFullScreenQR(true);
+                }}
+                className="w-full py-3 bg-white border border-[#007AFF] text-[#007AFF] rounded-xl text-sm font-bold shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              >
+                <QrCode size={18}/>
+                生成中继器配网二维码
+              </button>
+            </div>
+
             <div className="form-group">
               <label htmlFor="hospital_name">医院名称 *</label>
               <input required id="hospital_name" className="form-input" value={hospitalName} onChange={e => setHospitalName(e.target.value)} placeholder="如：协和医院" />
@@ -143,9 +194,9 @@ export default function App() {
 
             <div className="form-group">
               <label htmlFor="device_sn">中继器 SN 码 *</label>
-              <div className="flex gap-2">
-                <input id="device_sn" className="form-input font-mono" value={deviceSn} onChange={e => setDeviceSn(e.target.value)} placeholder="如留空将自动获取硬件SN" />
-                <label className="scan-btn whitespace-nowrap cursor-pointer flex items-center justify-center m-0">
+              <div className="flex gap-2 items-center">
+                <input id="device_sn" className="form-input font-mono flex-1" value={deviceSn} onChange={e => setDeviceSn(e.target.value)} placeholder="如留空将自动获取硬件SN" />
+                <label className="scan-btn whitespace-nowrap cursor-pointer m-0">
                   扫描
                   <input 
                     type="file" 
@@ -200,6 +251,46 @@ export default function App() {
         </section>
 
       </main>
+
+      {/* Fullscreen QR Modal */}
+      <AnimatePresence>
+        {showFullScreenQR && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-6"
+          >
+            <button 
+              onClick={() => setShowFullScreenQR(false)}
+              className="absolute top-6 right-6 text-white/50 hover:text-white"
+            >
+              <X size={32}/>
+            </button>
+            <div className="text-center mb-8">
+              <h2 className="text-white text-xl font-bold mb-2">中继器配网二维码</h2>
+              <p className="text-white/60 text-sm">请将中继器摄像头对准屏幕</p>
+            </div>
+            <div className="bg-white p-6 rounded-[32px] shadow-[0_0_50px_rgba(0,122,255,0.4)]">
+              <QRCodeSVG value={generateQRCodeStr()} size={240} level="H" />
+            </div>
+            
+            <div className="mt-12 flex flex-col gap-4 w-full max-w-xs">
+              <button 
+                onClick={() => {
+                  alert('中继器建立连接成功！');
+                  setShowFullScreenQR(false);
+                }}
+                className="w-full py-4 bg-[#34C759] text-white rounded-2xl font-bold flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 size={20}/>
+                模拟扫描成功并连接
+              </button>
+              <p className="text-white/40 text-[11px] text-center">中继器连接云端后会自动同步配网状态</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* Hidden div required by html5-qrcode file scanning API */}
       <div id="native-qr-reader" style={{ display: 'none' }}></div>

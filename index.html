@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,16 +7,13 @@
     <link rel="manifest" href="manifest.json" />
     <script>
       // Automatically unregister any stale service workers to prevent blank screens
-      // caused by cached index.html pointing to old JS chunks.
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(registrations) {
           for(let registration of registrations) {
             registration.unregister();
-            console.log('Unregistered stale SW');
           }
         });
         
-        // Also clear caches
         if ('caches' in window) {
           caches.keys().then(function(names) {
             for (let name of names) caches.delete(name);
@@ -25,10 +22,10 @@
       }
       
       window.addEventListener('error', function(e) {
-        document.body.innerHTML += '<div style="color:red;padding:20px;">Global Error: ' + e.message + '<br>' + e.filename + ':' + e.lineno + '</div>';
+        console.error('Global Error:', e.message, e.filename, e.lineno);
       });
       window.addEventListener('unhandledrejection', function(e) {
-        document.body.innerHTML += '<div style="color:red;padding:20px;">Unhandled Promise: ' + e.reason + '</div>';
+        console.error('Unhandled Promise Rejection:', e.reason);
       });
     </script>
   </head>

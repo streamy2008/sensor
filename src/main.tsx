@@ -1,25 +1,36 @@
-import {StrictMode, Component, ReactNode} from 'react';
-import {createRoot} from 'react-dom/client';
+import React, { StrictMode, ReactNode } from 'react';
+import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean, error: Error | null }> {
-  constructor(props: { children: ReactNode }) {
+interface Props {
+  children: ReactNode;
+}
+
+interface State {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<any, any> {
+  constructor(props: any) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: Error) {
+  static getDerivedStateFromError(error: any) {
     return { hasError: true, error };
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: 20, color: 'red', background: '#fff' }}>
-          <h1>App crashed</h1>
-          <pre>{this.state.error?.message}</pre>
-          <pre>{this.state.error?.stack}</pre>
+        <div style={{ padding: 20, color: '#D0021B', background: '#FFF5F5', borderRadius: '12px', border: '1px solid #EFA9A9' }}>
+          <h1 style={{ fontSize: '20px', fontWeight: 'bold' }}>系统运行异常</h1>
+          <p style={{ fontSize: '14px', margin: '10px 0' }}>检测到应用发生错误，请刷新页面或检查网络配置。</p>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: '12px', background: '#FFF', padding: '10px', borderRadius: '8px' }}>
+            {this.state.error?.message}
+          </pre>
         </div>
       );
     }
