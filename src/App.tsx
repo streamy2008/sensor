@@ -6,11 +6,11 @@ import { Monitor } from './components/Monitor';
 import { saveOfflineTask, getOfflineTasks, clearOfflineTasks } from './components/db';
 
 export default function App() {
-  const [hospitalName, setHospitalName] = useState('');
-  const [inspectorName, setInspectorName] = useState('');
-  const [totalRooms, setTotalRooms] = useState('');
-  const [validRooms, setValidRooms] = useState('');
-  const [currentRoom, setCurrentRoom] = useState('');
+  const [hospitalName, setHospitalName] = useState('华西');
+  const [inspectorName, setInspectorName] = useState('郑世斌');
+  const [totalRooms, setTotalRooms] = useState('32');
+  const [validRooms, setValidRooms] = useState('12');
+  const [currentRoom, setCurrentRoom] = useState('OR-1');
   const [deviceSn, setDeviceSn] = useState('');
   
   const [showScanner, setShowScanner] = useState(false);
@@ -137,7 +137,7 @@ export default function App() {
         <NetworkConfig />
 
         {/* Module 3: Monitor */}
-        <Monitor deviceSn={deviceSn} />
+        <Monitor deviceSn={deviceSn} setDeviceSn={setDeviceSn} />
 
       </main>
     </div>

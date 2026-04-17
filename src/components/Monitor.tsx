@@ -8,7 +8,7 @@ interface StatsResponse {
   aiInsights: string;
 }
 
-export function Monitor({ deviceSn }: { deviceSn: string }) {
+export function Monitor({ deviceSn, setDeviceSn }: { deviceSn: string; setDeviceSn: (sn: string) => void }) {
   const [isPolling, setIsPolling] = useState(false);
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [error, setError] = useState('');
@@ -27,19 +27,28 @@ export function Monitor({ deviceSn }: { deviceSn: string }) {
   }, []);
 
   const pullData = async () => {
-    if (!deviceSn) {
-      setError('请先在上方录入表单中扫描或填写中继器 SN 码');
-      setIsPolling(false);
-      return;
+    let currentSn = deviceSn;
+    // 自动填写SN码
+    if (!currentSn) {
+      currentSn = `SN123456`; // 默认给定一个测试SN码
+      setDeviceSn(currentSn);
     }
     setError('');
     
     try {
+      // 模拟上传设备log信息
+      console.log(`[Log Upload] Posting device logs online for SN: ${currentSn}...`, {
+        timestamp: new Date().toISOString(),
+        event: 'telemetry_sync',
+        battery: '88%',
+        signalStrength: '-50dBm'
+      });
+      
       const mockData = {
         lastSync: new Date().toLocaleTimeString(),
         validCurrentRoom: Math.floor(Math.random() * 5) + 40,
         valid30Days: Math.floor(Math.random() * 50) + 100,
-        aiInsights: '当前 OR-3 中传感器密度比医院基准高 12%。建议 48 小时内补充耗材。'
+        aiInsights: '设备 Log 已后台静默上传。当前 OR-3 中传感器密度良好，建议 48 小时内补充耗材。'
       };
       setStats(mockData);
     } catch (err) {
