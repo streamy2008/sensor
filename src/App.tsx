@@ -1,6 +1,6 @@
 import { Scan, Save, Settings, Database, Server, Wifi } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
-import { Scanner } from './components/Scanner';
+import { Html5Qrcode } from 'html5-qrcode';
 import { NetworkConfig } from './components/NetworkConfig';
 import { saveOfflineTask, getOfflineTasks, clearOfflineTasks } from './components/db';
 
@@ -18,7 +18,6 @@ export default function App() {
   const [currentRoom, setCurrentRoom] = useState('OR-1');
   const [deviceSn, setDeviceSn] = useState('');
   
-  const [showScanner, setShowScanner] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stats, setStats] = useState<FinalStats | null>(null);
@@ -146,22 +145,33 @@ export default function App() {
               <label htmlFor="device_sn">中继器 SN 码 *</label>
               <div className="flex gap-2">
                 <input id="device_sn" className="form-input font-mono" value={deviceSn} onChange={e => setDeviceSn(e.target.value)} placeholder="如留空将自动获取硬件SN" />
-                <button type="button" onClick={() => setShowScanner(!showScanner)} className="scan-btn whitespace-nowrap">
+                <label className="scan-btn whitespace-nowrap cursor-pointer flex items-center justify-center m-0">
                   扫描
-                </button>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    capture="environment" 
+                    className="hidden" 
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const html5QrCode = new Html5Qrcode("native-qr-reader");
+                        const decodedText = await html5QrCode.scanFile(file, true);
+                        setDeviceSn(decodedText);
+                        alert('中继器扫描成功，建立连接成功！');
+                      } catch (err) {
+                        alert('未检测到有效二维码，请手动输入或重拍');
+                      } finally {
+                        e.target.value = ''; // reset input
+                        const readerElement = document.getElementById('native-qr-reader');
+                        if (readerElement) readerElement.innerHTML = ''; // clean up canvas
+                      }
+                    }} 
+                  />
+                </label>
               </div>
             </div>
-
-            {showScanner && (
-              <div className="mt-2 mb-4 p-2 bg-black/5 rounded-2xl">
-                 <Scanner onScanSuccess={(text) => { 
-                   setDeviceSn(text); 
-                   setShowScanner(false); 
-                   alert('中继器扫描成功，建立连接成功！'); 
-                 }} />
-                 <button type="button" onClick={() => setShowScanner(false)} className="w-full mt-2 py-1.5 text-xs text-[#86868B] hover:text-[#1D1D1F] font-medium">取消扫描</button>
-              </div>
-            )}
 
             <button type="submit" id="btn_submit" disabled={isSubmitting} className="primary-btn mt-3">
               {isSubmitting ? '正在推送设备日志并聚合并验证数据...' : '上报巡检信息'}
@@ -190,6 +200,9 @@ export default function App() {
         </section>
 
       </main>
+      
+      {/* Hidden div required by html5-qrcode file scanning API */}
+      <div id="native-qr-reader" style={{ display: 'none' }}></div>
     </div>
   );
 }

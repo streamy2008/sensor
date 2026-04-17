@@ -19,7 +19,7 @@ export function NetworkConfig() {
       
       <div className="flex flex-col flex-1">
         <div className="form-group">
-          <label htmlFor="wifi_ssid">网络名称 SSID</label>
+          <label htmlFor="wifi_ssid">手机热点（ SSID）</label>
           <input
             type="text"
             id="wifi_ssid"
