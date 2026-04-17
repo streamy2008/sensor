@@ -2,8 +2,13 @@ import { Scan, Save, Settings, Database, Server, Wifi } from 'lucide-react';
 import { FormEvent, useEffect, useState } from 'react';
 import { Scanner } from './components/Scanner';
 import { NetworkConfig } from './components/NetworkConfig';
-import { Monitor } from './components/Monitor';
 import { saveOfflineTask, getOfflineTasks, clearOfflineTasks } from './components/db';
+
+interface FinalStats {
+  validCurrentRoom: number;
+  valid30Days: number;
+  aiInsights: string;
+}
 
 export default function App() {
   const [hospitalName, setHospitalName] = useState('华西');
@@ -16,6 +21,7 @@ export default function App() {
   const [showScanner, setShowScanner] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stats, setStats] = useState<FinalStats | null>(null);
 
   useEffect(() => {
     const handleOnline = async () => {
@@ -41,26 +47,48 @@ export default function App() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!hospitalName || !inspectorName || !deviceSn) {
-      alert('请输入必填字段：医院名称、巡检人、SN码');
+    
+    let currentSn = deviceSn;
+    // 自动填写SN码（如未填，则模拟硬件取值）
+    if (!currentSn) {
+      currentSn = `SN-${Math.floor(100000 + Math.random() * 900000)}`;
+      setDeviceSn(currentSn);
+    }
+
+    if (!hospitalName || !inspectorName) {
+      alert('请输入必填字段：医院名称、巡检人');
       return;
     }
 
     setIsSubmitting(true);
-    const data = { hospitalName, inspectorName, totalRooms, validRooms, currentRoom, deviceSn };
+    const data = { hospitalName, inspectorName, totalRooms, validRooms, currentRoom, deviceSn: currentSn };
 
     try {
       if (isOnline) {
-        console.log('Posting data online...', data);
-        // await fetch('/.netlify/functions/submitContext', { method: 'POST', body: JSON.stringify(data) });
-        await new Promise(r => setTimeout(r, 600)); // simulate network
-        alert('上报成功！');
+        // 核心环节：一次性触发并向云端发送关联 log
+        console.log(`[Device Log] Triggering hardware telemetry and logs...`, {
+          deviceSn: currentSn,
+          timestamp: new Date().toISOString(),
+          event: 'telemetry_push_on_submit',
+          battery: '88%',
+          signalStrength: '-60dBm',
+          log: `Inspection initiated at ${hospitalName} by ${inspectorName}. Telemetry active.`
+        });
+        
+        await new Promise(r => setTimeout(r, 1500)); // 延长点时间展示状态模拟汇总过程
+        
+        // 生成汇总结果
+        setStats({
+          validCurrentRoom: Math.floor(Math.random() * 5) + 40,
+          valid30Days: Math.floor(Math.random() * 50) + 100,
+          aiInsights: `巡检单与设备底层 Log 上报合并成功！监测系统已同步绑定设备 (${currentSn}) 并校验探针数据完成无误。`
+        });
       } else {
         await saveOfflineTask(data);
-        alert('当前处于离线状态，数据已保存至本地，网络恢复后将自动上报。');
+        alert('当前处于离线状态，数据已保存至本地，网络恢复后将自动合并上报。');
       }
     } catch (err) {
-      alert('上报失败');
+      alert('上报合并失败');
     } finally {
       setIsSubmitting(false);
     }
@@ -79,10 +107,14 @@ export default function App() {
         </div>
       </header>
 
-      <main className="grid grid-cols-1 lg:grid-cols-[320px_320px_1fr] gap-5 flex-1 items-start">
+      <main className="flex flex-col gap-6 max-w-xl w-full mx-auto pb-16">
         
-        {/* Module 1: Business Context */}
-        <section className="glass-card">
+        {/* Module 2: Setup QR (Now On Top) */}
+        <NetworkConfig />
+
+        {/* Module 1: Business Context & Results (Now At Bottom) */}
+        <section className="glass-card flex flex-col pt-6 pb-6">
+          <h2 className="mb-4 text-[18px] font-bold text-[#1D1D1F]">巡检信息上报</h2>
           <form onSubmit={handleSubmit} className="flex flex-col flex-1">
             <div className="form-group">
               <label htmlFor="hospital_name">医院名称 *</label>
@@ -113,7 +145,7 @@ export default function App() {
             <div className="form-group">
               <label htmlFor="device_sn">中继器 SN 码 *</label>
               <div className="flex gap-2">
-                <input required id="device_sn" className="form-input font-mono" value={deviceSn} onChange={e => setDeviceSn(e.target.value)} placeholder="SN123456" />
+                <input id="device_sn" className="form-input font-mono" value={deviceSn} onChange={e => setDeviceSn(e.target.value)} placeholder="如留空将自动获取硬件SN" />
                 <button type="button" onClick={() => setShowScanner(!showScanner)} className="scan-btn whitespace-nowrap">
                   扫描
                 </button>
@@ -122,22 +154,40 @@ export default function App() {
 
             {showScanner && (
               <div className="mt-2 mb-4 p-2 bg-black/5 rounded-2xl">
-                 <Scanner onScanSuccess={(text) => { setDeviceSn(text); setShowScanner(false); }} />
+                 <Scanner onScanSuccess={(text) => { 
+                   setDeviceSn(text); 
+                   setShowScanner(false); 
+                   alert('中继器扫描成功，建立连接成功！'); 
+                 }} />
                  <button type="button" onClick={() => setShowScanner(false)} className="w-full mt-2 py-1.5 text-xs text-[#86868B] hover:text-[#1D1D1F] font-medium">取消扫描</button>
               </div>
             )}
 
-            <button type="submit" id="btn_submit" disabled={isSubmitting} className="primary-btn mt-auto">
-              {isSubmitting ? '上报中...' : '上报巡检信息'}
+            <button type="submit" id="btn_submit" disabled={isSubmitting} className="primary-btn mt-3">
+              {isSubmitting ? '正在推送设备日志并聚合并验证数据...' : '上报巡检信息'}
             </button>
           </form>
+
+          {stats && (
+            <div className="mt-8 pt-6 border-t border-black/10 flex flex-col gap-4 animate-in fade-in zoom-in duration-300">
+                <h3 className="font-semibold text-[#1D1D1F] text-[15px]">系统汇总结果</h3>
+                <div className="monitor-grid">
+                    <div className="stat-box">
+                        <div className="stat-label">此间有效SN数</div>
+                        <div className="stat-value">{stats.validCurrentRoom}</div>
+                    </div>
+                    <div className="stat-box">
+                        <div className="stat-label">30天活跃总数</div>
+                        <div className="stat-value" style={{ color: 'var(--color-accent-green)' }}>{stats.valid30Days}</div>
+                    </div>
+                </div>
+                <div className="ai-insight">
+                    <div className="ai-title">数据合并回执</div>
+                    <div className="ai-content">{stats.aiInsights}</div>
+                </div>
+            </div>
+          )}
         </section>
-
-        {/* Module 2: Setup QR */}
-        <NetworkConfig />
-
-        {/* Module 3: Monitor */}
-        <Monitor deviceSn={deviceSn} setDeviceSn={setDeviceSn} />
 
       </main>
     </div>

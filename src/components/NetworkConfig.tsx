@@ -70,18 +70,18 @@ export function NetworkConfig() {
                  <QRCodeSVG value={generateQRCodeStr()} size={110} level="H" />
              </div>
           ) : (
-            <div className="qr-placeholder">
-              配网二维码区域
+            <div className="qr-placeholder text-white font-medium text-sm p-4 text-center leading-relaxed">
+              中继器<br/>配网二维码
             </div>
           )}
-          <p className="text-[11px] text-text-secondary">向硬件摄像头展示二维码以完成配置</p>
+          <p className="text-[11px] text-[#86868B] mt-2">向硬件摄像头展示二维码以完成配置</p>
         </div>
 
         <button
           onClick={() => setShowQR(!showQR)}
-          className="primary-btn mt-auto"
+          className="primary-btn mt-6"
         >
-          {showQR ? '隐藏二维码' : '生成配网配置'}
+          {showQR ? '隐藏二维码' : '生成中继器配网二维码'}
         </button>
       </div>
     </section>

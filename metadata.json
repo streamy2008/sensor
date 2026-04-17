@@ -1,6 +1,6 @@
 {
   "name": "巡检记录单",
-  "description": "",
-  "requestFramePermissions": [],
+  "description": "巡检录入中枢 · 硬件配网 · 实时监视",
+  "requestFramePermissions": ["camera"],
   "majorCapabilities": []
 }
