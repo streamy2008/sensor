@@ -110,11 +110,11 @@ export default function App() {
         const result = await response.json();
         console.log("✅ 云端返回成功:", result);
         
-        // 渲染成功的统计面板展示给用户
+        // 🚀 将之前写死的 Math.random() 替换为从阿里云数据库查出的真实统计数据！
         setStats({
-          validCurrentRoom: Math.floor(Math.random() * 5) + 40,
-          valid30Days: Math.floor(Math.random() * 50) + 100,
-          aiInsights: result.message || `巡检单已成功上传云端！企业微信推送已触发。`
+          validCurrentRoom: result.stats?.validCurrentRoom || 0,
+          valid30Days: result.stats?.valid30Days || 0,
+          aiInsights: result.message || `巡检单已成功上传云端！`
         });
         
         alert("🎉 巡检数据上报落库成功！");
