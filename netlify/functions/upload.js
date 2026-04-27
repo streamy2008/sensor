@@ -41,7 +41,7 @@ exports.handler = async (event, context) => {
 
         const aiInsights = "数据落库并推送成功！";
 
-        // 3. 呼叫企业微信（加入图表中的汇总数据）
+        // 3. 呼叫企业微信机器人（群消息通知）
         if (process.env.WECOM_WEBHOOK) {
             const wecomPayload = {
                 msgtype: "markdown",
@@ -57,7 +57,38 @@ exports.handler = async (event, context) => {
             });
         }
 
-        // 4. 将真实的统计结果返回给前端，替换掉前端的随机数
+        // 4. 🚀 终极架构：直接调用企业微信智能表格的原生 Webhook 写入数据
+        const WECOM_SHEET_WEBHOOK = "https://qyapi.weixin.qq.com/cgi-bin/wedoc/smartsheet/webhook?key=5mcCobjokBLmc8jZPTEW5Qz76jTDhZXCCMJHXnHiEjsGT4XSCSINDiMZjmSnDEWJ2sj5KA5kOj5M10bUkPlJc6uivYP2DN93t1XlfqZwCGFk";
+
+        if (WECOM_SHEET_WEBHOOK) {
+            try {
+                const sheetPayload = {
+                    sn: sn,
+                    hospital_name: hospital_name,
+                    inspector_name: inspector_name,
+                    total_rooms: Number(total_rooms) || 0,
+                    valid_rooms: Number(valid_rooms) || 0,
+                    current_room: current_room
+                };
+
+                const sheetResponse = await fetch(WECOM_SHEET_WEBHOOK, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sheetPayload)
+                });
+
+                if (sheetResponse.ok) {
+                    console.log("✅ 企微智能表格原生直连写入成功！");
+                } else {
+                    const errText = await sheetResponse.text();
+                    console.error("⚠️ 企微表格写入失败，返回信息:", errText);
+                }
+            } catch (sheetErr) {
+                console.error("⚠️ 企微原生 Webhook 网络报错:", sheetErr);
+            }
+        }
+
+        // 5. 将真实的统计结果返回给前端 UI
         return {
             statusCode: 200,
             body: JSON.stringify({ 
