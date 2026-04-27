@@ -23,15 +23,13 @@ exports.handler = async (event, context) => {
             VALUES (?, ?, ?, ?, ?, ?)
         `, [sn, hospital_name, inspector_name, total_rooms, valid_rooms, current_room]);
 
-        // 2. 👑 核心升级：查询真实的统计数据
-        // 查询当前医院、当前术间的去重 SN 数量
+        // 2. 👑 查询真实的统计数据
         const [roomRows] = await connection.execute(
             `SELECT COUNT(DISTINCT sn) as count FROM inspection_context WHERE hospital_name = ? AND current_room = ?`, 
             [hospital_name, current_room]
         );
         const validCurrentRoom = roomRows[0].count;
 
-        // 查询全库近 30 天活跃的去重 SN 总数
         const [monthRows] = await connection.execute(
             `SELECT COUNT(DISTINCT sn) as count FROM inspection_context WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`
         );
@@ -57,18 +55,32 @@ exports.handler = async (event, context) => {
             });
         }
 
-        // 4. 🚀 终极架构：直接调用企业微信智能表格的原生 Webhook 写入数据
+        // 4. 🚀 按照企微严格 Schema 写入智能表格
         const WECOM_SHEET_WEBHOOK = "https://qyapi.weixin.qq.com/cgi-bin/wedoc/smartsheet/webhook?key=5mcCobjokBLmc8jZPTEW5Qz76jTDhZXCCMJHXnHiEjsGT4XSCSINDiMZjmSnDEWJ2sj5KA5kOj5M10bUkPlJc6uivYP2DN93t1XlfqZwCGFk";
 
         if (WECOM_SHEET_WEBHOOK) {
             try {
                 const sheetPayload = {
-                    sn: sn,
-                    hospital_name: hospital_name,
-                    inspector_name: inspector_name,
-                    total_rooms: Number(total_rooms) || 0,
-                    valid_rooms: Number(valid_rooms) || 0,
-                    current_room: current_room
+                    "schema": {
+                        "f04Gwj": "上报时间",
+                        "ftQMc5": "医院名称",
+                        "ftk5Tx": "巡检人",
+                        "ffFwIh": "中继器SN码",
+                        "fn8TJd": "总间数",
+                        "fH8nTZ": "当前术间"
+                    },
+                    "add_records": [
+                        {
+                            "values": {
+                                "f04Gwj": Date.now().toString(),       // 自动生成当前时间的毫秒时间戳字符串
+                                "ftQMc5": hospital_name,               // 医院名称
+                                "ftk5Tx": inspector_name,              // 巡检人 (务必在表格里把这列设为文本)
+                                "ffFwIh": sn,                          // SN码
+                                "fn8TJd": Number(total_rooms) || 0,    // 总间数
+                                "fH8nTZ": current_room                 // 当前术间
+                            }
+                        }
+                    ]
                 };
 
                 const sheetResponse = await fetch(WECOM_SHEET_WEBHOOK, {
@@ -78,7 +90,7 @@ exports.handler = async (event, context) => {
                 });
 
                 if (sheetResponse.ok) {
-                    console.log("✅ 企微智能表格原生直连写入成功！");
+                    console.log("✅ 企微智能表格结构化写入成功！");
                 } else {
                     const errText = await sheetResponse.text();
                     console.error("⚠️ 企微表格写入失败，返回信息:", errText);
