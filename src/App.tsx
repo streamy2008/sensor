@@ -316,4 +316,47 @@ export default function App() {
               <div className="w-16 h-16 bg-[#007AFF] rounded-3xl flex items-center justify-center text-white mx-auto mb-6 shadow-2xl shadow-[#007AFF]/40">
                 <QrCode size={32}/>
               </div>
-              <h2 className="text-white text-2xl font-bold
+              <h2 className="text-white text-2xl font-bold mb-3 tracking-tight">中继器配网二维码</h2>
+              <p className="text-white/50 text-[15px] font-medium">请将中继器摄像头对准屏幕中心区域</p>
+            </motion.div>
+
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", damping: 20, stiffness: 100, delay: 0.2 }}
+              className="bg-white p-8 rounded-[48px] shadow-[0_0_80px_rgba(0,122,255,0.3)] relative"
+            >
+              <QRCodeSVG value={generateQRCodeStr()} size={280} level="H" />
+              <div className="absolute -inset-4 border border-white/10 rounded-[60px] pointer-events-none"></div>
+            </motion.div>
+            
+            <motion.div 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="mt-16 flex flex-col gap-6 w-full max-w-sm px-6"
+            >
+              <button 
+                onClick={() => {
+                  alert('中继器建立连接成功！');
+                  setShowFullScreenQR(false);
+                }}
+                className="w-full py-5 bg-[#34C759] text-white rounded-[24px] font-bold text-lg shadow-xl shadow-[#34C759]/20 flex items-center justify-center gap-3 active:scale-[0.98] transition-transform"
+              >
+                <CheckCircle2 size={24}/>
+                确认连接成功
+              </button>
+              <div className="flex flex-col gap-1">
+                <p className="text-white/30 text-[12px] text-center font-medium">中继器连接云端后会自动同步配网状态</p>
+                <p className="text-white/20 text-[10px] text-center">加密协议: {encryption}</p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Hidden div required by html5-qrcode file scanning API */}
+      <div id="native-qr-reader" style={{ display: 'none' }}></div>
+    </div>
+  );
+}
