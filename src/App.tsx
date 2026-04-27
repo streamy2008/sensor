@@ -35,13 +35,24 @@ export default function App() {
       setIsOnline(true);
       const offlineTasks = await getOfflineTasks();
       if (offlineTasks.length > 0) {
-        console.log('Sending offline tasks to server...', offlineTasks);
-        // Mock POST to /.netlify/functions/submitContext
-        // await fetch('...', { body: JSON.stringify(offlineTasks) })
-        await clearOfflineTasks();
-        alert('已自动补发离线期间保存的数据。');
+        console.log('检测到网络恢复，正在自动补发离线数据...', offlineTasks);
+        try {
+          // 遍历发送离线保存的任务到 Netlify 云函数
+          for (const task of offlineTasks) {
+            await fetch('/.netlify/functions/upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(task)
+            });
+          }
+          await clearOfflineTasks();
+          alert('✅ 已自动补发离线期间保存的数据并落库。');
+        } catch (error) {
+          console.error('离线补发失败:', error);
+        }
       }
     };
+    
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
@@ -68,34 +79,53 @@ export default function App() {
     }
 
     setIsSubmitting(true);
-    const data = { hospitalName, inspectorName, totalRooms, validRooms, currentRoom, deviceSn: currentSn };
+    
+    // 严格按照后端的下划线格式组装 Payload
+    const payload = { 
+      sn: currentSn,
+      hospital_name: hospitalName, 
+      inspector_name: inspectorName, 
+      total_rooms: parseInt(totalRooms) || 0, 
+      valid_rooms: parseInt(validRooms) || 0, 
+      current_room: currentRoom 
+    };
 
     try {
       if (isOnline) {
-        // 核心环节：一次性触发并向云端发送关联 log
-        console.log(`[Device Log] Triggering hardware telemetry and logs...`, {
-          deviceSn: currentSn,
-          timestamp: new Date().toISOString(),
-          event: 'telemetry_push_on_submit',
-          battery: '88%',
-          signalStrength: '-60dBm',
-          log: `Inspection initiated at ${hospitalName} by ${inspectorName}. Telemetry active.`
+        console.log("🚀 准备发送数据给云端处理中枢...", payload);
+        
+        // 呼叫你的 Netlify 云函数
+        const response = await fetch('/.netlify/functions/upload', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
         });
+
+        if (!response.ok) {
+            throw new Error(`HTTP 请求错误，状态码: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("✅ 云端返回成功:", result);
         
-        await new Promise(r => setTimeout(r, 1500)); // 延长点时间展示状态模拟汇总过程
-        
-        // 生成汇总结果
+        // 渲染成功的统计面板展示给用户
         setStats({
           validCurrentRoom: Math.floor(Math.random() * 5) + 40,
           valid30Days: Math.floor(Math.random() * 50) + 100,
-          aiInsights: `巡检单与设备底层 Log 上报合并成功！监测系统已同步绑定设备 (${currentSn}) 并校验探针数据完成无误。`
+          aiInsights: result.message || `巡检单已成功上传云端！企业微信推送已触发。`
         });
+        
+        alert("🎉 巡检数据上报落库成功！");
       } else {
-        await saveOfflineTask(data);
+        // 离线状态依然保存到本地 IndexDB
+        await saveOfflineTask(payload);
         alert('当前处于离线状态，数据已保存至本地，网络恢复后将自动合并上报。');
       }
     } catch (err) {
-      alert('上报合并失败');
+      console.error("❌ 上报失败:", err);
+      alert('上报合并失败，请检查网络或后端云函数状态。');
     } finally {
       setIsSubmitting(false);
     }
@@ -231,7 +261,7 @@ export default function App() {
             </div>
 
             <button type="submit" id="btn_submit" disabled={isSubmitting} className="primary-btn mt-3">
-              {isSubmitting ? '正在推送设备日志并聚合并验证数据...' : '上报巡检信息'}
+              {isSubmitting ? '正在推送至云函数数据库并呼叫企微...' : '上报巡检信息'}
             </button>
           </form>
 
@@ -286,47 +316,4 @@ export default function App() {
               <div className="w-16 h-16 bg-[#007AFF] rounded-3xl flex items-center justify-center text-white mx-auto mb-6 shadow-2xl shadow-[#007AFF]/40">
                 <QrCode size={32}/>
               </div>
-              <h2 className="text-white text-2xl font-bold mb-3 tracking-tight">中继器配网二维码</h2>
-              <p className="text-white/50 text-[15px] font-medium">请将中继器摄像头对准屏幕中心区域</p>
-            </motion.div>
-
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", damping: 20, stiffness: 100, delay: 0.2 }}
-              className="bg-white p-8 rounded-[48px] shadow-[0_0_80px_rgba(0,122,255,0.3)] relative"
-            >
-              <QRCodeSVG value={generateQRCodeStr()} size={280} level="H" />
-              <div className="absolute -inset-4 border border-white/10 rounded-[60px] pointer-events-none"></div>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="mt-16 flex flex-col gap-6 w-full max-w-sm px-6"
-            >
-              <button 
-                onClick={() => {
-                  alert('中继器建立连接成功！');
-                  setShowFullScreenQR(false);
-                }}
-                className="w-full py-5 bg-[#34C759] text-white rounded-[24px] font-bold text-lg shadow-xl shadow-[#34C759]/20 flex items-center justify-center gap-3 active:scale-[0.98] transition-transform"
-              >
-                <CheckCircle2 size={24}/>
-                确认连接成功
-              </button>
-              <div className="flex flex-col gap-1">
-                <p className="text-white/30 text-[12px] text-center font-medium">中继器连接云端后会自动同步配网状态</p>
-                <p className="text-white/20 text-[10px] text-center">加密协议: {encryption}</p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {/* Hidden div required by html5-qrcode file scanning API */}
-      <div id="native-qr-reader" style={{ display: 'none' }}></div>
-    </div>
-  );
-}
+              <h2 className="text-white text-2xl font-bold
